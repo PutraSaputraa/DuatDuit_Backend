@@ -2,12 +2,25 @@
 // Start session PERTAMA
 session_start();
 
-// CORS Headers
-header("Access-Control-Allow-Origin: https://duatduit.netlify.app");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header("Access-Control-Allow-Credentials: true");
-header("Content-Type: application/json; charset=UTF-8");
+// Cek apakah headers sudah dikirim oleh Railway
+if (!headers_sent()) {
+    // CORS Headers - gunakan wildcard atau domain spesifik
+    $allowed_origins = [
+        'https://duatduit.netlify.app',
+        'http://localhost:3000'
+    ];
+    
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    
+    if (in_array($origin, $allowed_origins)) {
+        header("Access-Control-Allow-Origin: $origin");
+    }
+    
+    header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization");
+    header("Access-Control-Allow-Credentials: true");
+    header("Content-Type: application/json; charset=UTF-8");
+}
 
 // Handle preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -16,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once 'config.php';
+// ... sisa kode
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
