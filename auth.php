@@ -1,64 +1,70 @@
 <?php
-// Start session PERTAMA
+// =======================================================
+//  AUTH.PHP — Sistem Auth API (Login, Register, Logout, Check)
+//  Diperbaiki agar kompatibel dengan Railway + Netlify (CORS fix)
+// =======================================================
+// 1️⃣ Mulai session paling awal
 session_start();
 
-// Cek apakah headers sudah dikirim oleh Railway
-if (!headers_sent()) {
-    // CORS Headers - gunakan wildcard atau domain spesifik
-    $allowed_origins = [
-        'https://duatduit.netlify.app',
-        'http://localhost:3000'
-    ];
-    
-    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-    
-    if (in_array($origin, $allowed_origins)) {
-        header("Access-Control-Allow-Origin: $origin");
-    }
-    
-    header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-    header("Access-Control-Allow-Headers: Content-Type, Authorization");
-    header("Access-Control-Allow-Credentials: true");
-    header("Content-Type: application/json; charset=UTF-8");
+// 2️⃣ Hapus header CORS bawaan server (Railway kadang menambah otomatis)
+if (function_exists('header_remove')) {
+    header_remove("Access-Control-Allow-Origin");
+    header_remove("Access-Control-Allow-Headers");
+    header_remove("Access-Control-Allow-Methods");
 }
 
-// Handle preflight
+// 3️⃣ Tentukan domain frontend yang diizinkan
+$allowed_origins = [
+    'https://duatduit.netlify.app',
+    'http://localhost:3000'
+];
+
+// 4️⃣ Cek asal permintaan (Origin) dan atur CORS
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if (in_array($origin, $allowed_origins)) {
+    header("Access-Control-Allow-Origin: $origin");
+}
+
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Credentials: true");
+header("Content-Type: application/json; charset=UTF-8");
+
+// 5️⃣ Tangani preflight OPTIONS request (wajib untuk browser)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
 
+// 6️⃣ Sertakan koneksi database
 require_once 'config.php';
 
+// 7️⃣ Routing berdasarkan action di query string (?action=)
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
 
 switch($action) {
-    case 'register':
-        register();
-        break;
-    case 'login':
-        login();
-        break;
-    case 'logout':
-        logout();
-        break;
-    case 'check':
-        checkAuth();
-        break;
+    case 'register': register(); break;
+    case 'login':    login();    break;
+    case 'logout':   logout();   break;
+    case 'check':    checkAuth(); break;
     default:
         http_response_code(400);
         echo json_encode(['error' => 'Invalid action']);
         break;
 }
 
-// REGISTER - Daftar user baru
+// =======================================================
+// ===============  FUNGSI - FUNGSI AUTH  ================
+// =======================================================
+
+// REGISTER — buat akun baru
 function register() {
     global $pdo;
     
     $data = json_decode(file_get_contents("php://input"), true);
     
-    if (!isset($data['username']) || !isset($data['email']) || !isset($data['password'])) {
+    if (!isset($data['username'], $data['email'], $data['password'])) {
         http_response_code(400);
         echo json_encode(['error' => 'Username, email, dan password wajib diisi']);
         return;
@@ -108,20 +114,19 @@ function register() {
     }
 }
 
-// LOGIN - Masuk ke akun
+// LOGIN — masuk akun
 function login() {
     global $pdo;
     
     $data = json_decode(file_get_contents("php://input"), true);
     
-    if (!isset($data['username']) || !isset($data['password'])) {
+    if (!isset($data['username'], $data['password'])) {
         http_response_code(400);
         echo json_encode(['error' => 'Username dan password wajib diisi']);
         return;
     }
     
     try {
-        // PERBAIKAN: Gunakan 2 parameter berbeda untuk menghindari error HY093
         $stmt = $pdo->prepare("SELECT * FROM users WHERE username = :user OR email = :email");
         $stmt->execute([
             ':user' => $data['username'],
@@ -155,7 +160,7 @@ function login() {
     }
 }
 
-// LOGOUT - Keluar dari akun
+// LOGOUT — keluar akun
 function logout() {
     session_destroy();
     
@@ -165,7 +170,7 @@ function logout() {
     ]);
 }
 
-// CHECK AUTH - Cek apakah user sudah login
+// CHECK AUTH — cek apakah user sudah login
 function checkAuth() {
     if (isset($_SESSION['user_id'])) {
         echo json_encode([
