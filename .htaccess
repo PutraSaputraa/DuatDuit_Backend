@@ -8,7 +8,8 @@
 </IfModule>
 
 # Enable CORS
-Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Origin "https://duatduit.netlify.app/"
 Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
 Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
+
 Header always set Access-Control-Allow-Credentials "true"
