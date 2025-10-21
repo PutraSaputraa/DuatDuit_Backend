@@ -121,8 +121,12 @@ function login() {
     }
     
     try {
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE username = :username OR email = :username");
-        $stmt->execute([':username' => $data['username']]);
+        // PERBAIKAN: Gunakan 2 parameter berbeda untuk menghindari error HY093
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE username = :user OR email = :email");
+        $stmt->execute([
+            ':user' => $data['username'],
+            ':email' => $data['username']
+        ]);
         $user = $stmt->fetch();
         
         if (!$user || !password_verify($data['password'], $user['password'])) {
@@ -138,7 +142,7 @@ function login() {
             'success' => true,
             'message' => 'Login berhasil',
             'user' => [
-                'id' => $user['id'],
+                'id' => (int)$user['id'],
                 'username' => $user['username'],
                 'email' => $user['email'],
                 'full_name' => $user['full_name']
@@ -179,5 +183,4 @@ function checkAuth() {
         ]);
     }
 }
-
 ?>
