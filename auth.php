@@ -1,21 +1,16 @@
 <?php
 session_start();
 
-// --- CORS FIX (Railway + Netlify + Localhost) ---
-if (function_exists('header_remove')) {
-    header_remove("Access-Control-Allow-Origin");
-    header_remove("Access-Control-Allow-Headers");
-    header_remove("Access-Control-Allow-Methods");
-}
-
+// --- FIX CORS (Railway + Netlify + Localhost) ---
 $allowed_origins = [
     'https://duatduit.netlify.app',
     'http://localhost:3000'
 ];
 
-// Hapus spasi dan slash di ujung URL
-$origin = isset($_SERVER['HTTP_ORIGIN']) ? trim($_SERVER['HTTP_ORIGIN'], " /") : '';
+// Ambil origin dari request
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
+// Kalau origin ada di whitelist, kirim header-nya
 if (in_array($origin, $allowed_origins)) {
     header("Access-Control-Allow-Origin: $origin");
 }
@@ -25,8 +20,16 @@ header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json; charset=UTF-8");
 
+// --- Handle preflight (OPTIONS) ---
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
+    // Kirim header yang sama lagi agar browser terima responsnya
+    if (in_array($origin, $allowed_origins)) {
+        header("Access-Control-Allow-Origin: $origin");
+    }
+    header("Access-Control-Allow-Credentials: true");
+    header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization");
     exit();
 }
 
