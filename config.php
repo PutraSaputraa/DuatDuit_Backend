@@ -1,17 +1,5 @@
 <?php
-// CORS Headers - PENTING untuk Netlify
-header("Access-Control-Allow-Origin: https://duatduit.netlify.app");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header("Access-Control-Allow-Credentials: true");
-header("Content-Type: application/json; charset=UTF-8");
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
-
-// Database dari Railway - GUNAKAN NAMA VARIABLE YANG BENAR!
+// Tidak perlu header apapun di sini
 define('DB_HOST', getenv('MYSQLHOST') ?: 'localhost');
 define('DB_PORT', getenv('MYSQLPORT') ?: '3306');
 define('DB_USER', getenv('MYSQLUSER') ?: 'root');
@@ -31,14 +19,7 @@ try {
     );
 } catch(PDOException $e) {
     http_response_code(500);
-    // Untuk debugging (hapus setelah selesai!)
-    echo json_encode([
-        'error' => 'Database connection failed',
-        'details' => $e->getMessage(),
-        'host' => DB_HOST,
-        'user' => DB_USER,
-        'db' => DB_NAME
-    ]);
+    echo json_encode(['error' => 'Database connection failed', 'details' => $e->getMessage()]);
     exit();
 }
 ?>

@@ -1,43 +1,38 @@
 <?php
-// =======================================================
-//  AUTH.PHP — Sistem Auth API (Login, Register, Logout, Check)
-//  Diperbaiki agar kompatibel dengan Railway + Netlify (CORS fix)
-// =======================================================
-// 1️⃣ Mulai session paling awal
 session_start();
 
-// 2️⃣ Hapus header CORS bawaan server (Railway kadang menambah otomatis)
+// --- CORS FIX (Railway + Netlify + Localhost) ---
 if (function_exists('header_remove')) {
     header_remove("Access-Control-Allow-Origin");
     header_remove("Access-Control-Allow-Headers");
     header_remove("Access-Control-Allow-Methods");
 }
 
-// 3️⃣ Tentukan domain frontend yang diizinkan
 $allowed_origins = [
     'https://duatduit.netlify.app',
     'http://localhost:3000'
 ];
 
-// 4️⃣ Cek asal permintaan (Origin) dan atur CORS
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+// Hapus spasi dan slash di ujung URL
+$origin = isset($_SERVER['HTTP_ORIGIN']) ? trim($_SERVER['HTTP_ORIGIN'], " /") : '';
+
 if (in_array($origin, $allowed_origins)) {
     header("Access-Control-Allow-Origin: $origin");
 }
 
+header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header("Access-Control-Allow-Credentials: true");
 header("Content-Type: application/json; charset=UTF-8");
 
-// 5️⃣ Tangani preflight OPTIONS request (wajib untuk browser)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
 
-// 6️⃣ Sertakan koneksi database
+// --- Lanjut ke logic PHP ---
 require_once 'config.php';
+
 
 // 7️⃣ Routing berdasarkan action di query string (?action=)
 $method = $_SERVER['REQUEST_METHOD'];
