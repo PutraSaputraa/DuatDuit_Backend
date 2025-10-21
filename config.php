@@ -1,6 +1,6 @@
 <?php
 // CORS Headers - PENTING untuk Netlify
-header("Access-Control-Allow-Origin: *"); // Atau ganti dengan domain Netlify kamu
+header("Access-Control-Allow-Origin: https://duatduit.netlify.app/"); // Atau ganti dengan domain Netlify kamu
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Access-Control-Allow-Credentials: true");
@@ -32,4 +32,5 @@ try {
     echo json_encode(['error' => 'Database connection failed']);
     exit();
 }
+
 ?>
