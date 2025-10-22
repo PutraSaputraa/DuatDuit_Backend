@@ -1,19 +1,13 @@
 <?php
-// ✅ PENTING: Set CORS headers sebelum session_start()
-header("Access-Control-Allow-Origin: http://localhost:3000"); // Ganti dengan domain frontend Anda
-header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
+// ✅ Start session untuk menyimpan data user
+session_start();
+
 header("Content-Type: application/json; charset=UTF-8");
 
-// Handle preflight request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
-
-// ✅ Start session SETELAH CORS headers
-session_start();
 
 require_once 'config.php';
 
