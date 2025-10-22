@@ -1,7 +1,8 @@
 <?php
 session_start();
 
-// --- FIX CORS (Testing aman multi-origin) ---
+// ❌ HAPUS/COMMENT bagian CORS ini karena sudah ditangani .htaccess
+/*
 $allowed_origins = [
     'https://duatduit.netlify.app',
     'http://localhost:3000'
@@ -16,6 +17,8 @@ if (in_array($origin, $allowed_origins)) {
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
+*/
+
 header("Content-Type: application/json; charset=UTF-8");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -23,11 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-
-// --- Lanjut ke logic PHP ---
 require_once 'config.php';
-
-
 
 // 7️⃣ Routing berdasarkan action di query string (?action=)
 $method = $_SERVER['REQUEST_METHOD'];
