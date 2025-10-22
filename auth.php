@@ -1,4 +1,7 @@
 <?php
+// ✅ Start session untuk menyimpan data user
+session_start();
+
 header("Content-Type: application/json; charset=UTF-8");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -7,9 +10,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once 'config.php';
-
-// Secret key untuk JWT (ganti dengan string random yang kuat)
-define('JWT_SECRET', 'ganti_dengan_secret_key_yang_aman_12345');
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
@@ -23,66 +23,6 @@ switch($action) {
         http_response_code(400);
         echo json_encode(['error' => 'Invalid action']);
         break;
-}
-
-// Fungsi untuk membuat JWT Token sederhana
-function createJWT($userId, $username) {
-    $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
-    $payload = json_encode([
-        'user_id' => $userId,
-        'username' => $username,
-        'exp' => time() + (86400 * 7) // Token berlaku 7 hari
-    ]);
-    
-    $base64UrlHeader = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($header));
-    $base64UrlPayload = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($payload));
-    
-    $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, JWT_SECRET, true);
-    $base64UrlSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
-    
-    return $base64UrlHeader . "." . $base64UrlPayload . "." . $base64UrlSignature;
-}
-
-// Fungsi untuk verifikasi JWT Token
-function verifyJWT($token) {
-    if (!$token) return null;
-    
-    $tokenParts = explode('.', $token);
-    if (count($tokenParts) !== 3) return null;
-    
-    $header = base64_decode(str_replace(['-', '_'], ['+', '/'], $tokenParts[0]));
-    $payload = base64_decode(str_replace(['-', '_'], ['+', '/'], $tokenParts[1]));
-    $signatureProvided = $tokenParts[2];
-    
-    $base64UrlHeader = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($header));
-    $base64UrlPayload = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($payload));
-    
-    $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, JWT_SECRET, true);
-    $base64UrlSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
-    
-    if ($base64UrlSignature !== $signatureProvided) return null;
-    
-    $payloadData = json_decode($payload, true);
-    
-    // Cek apakah token expired
-    if (isset($payloadData['exp']) && $payloadData['exp'] < time()) {
-        return null;
-    }
-    
-    return $payloadData;
-}
-
-// Fungsi untuk mendapatkan token dari header
-function getBearerToken() {
-    $headers = getallheaders();
-    
-    if (isset($headers['Authorization'])) {
-        if (preg_match('/Bearer\s+(.*)$/i', $headers['Authorization'], $matches)) {
-            return $matches[1];
-        }
-    }
-    
-    return null;
 }
 
 // REGISTER
@@ -141,7 +81,7 @@ function register() {
     }
 }
 
-// LOGIN
+// LOGIN - Simpan data user ke session
 function login() {
     global $pdo;
     
@@ -167,13 +107,13 @@ function login() {
             return;
         }
         
-        // Buat JWT Token
-        $token = createJWT($user['id'], $user['username']);
+        // ✅ Simpan user ID ke session
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['username'] = $user['username'];
         
         echo json_encode([
             'success' => true,
             'message' => 'Login berhasil',
-            'token' => $token,
             'user' => [
                 'id' => (int)$user['id'],
                 'username' => $user['username'],
@@ -188,35 +128,25 @@ function login() {
     }
 }
 
-// LOGOUT
+// LOGOUT - Hapus session
 function logout() {
+    session_destroy();
+    
     echo json_encode([
         'success' => true,
         'message' => 'Logout berhasil'
     ]);
 }
 
-// CHECK AUTH
+// CHECK AUTH - Cek apakah user sudah login
 function checkAuth() {
-    $token = getBearerToken();
-    
-    if (!$token) {
-        echo json_encode([
-            'success' => true,
-            'authenticated' => false
-        ]);
-        return;
-    }
-    
-    $payload = verifyJWT($token);
-    
-    if ($payload) {
+    if (isset($_SESSION['user_id'])) {
         echo json_encode([
             'success' => true,
             'authenticated' => true,
             'user' => [
-                'id' => $payload['user_id'],
-                'username' => $payload['username']
+                'id' => $_SESSION['user_id'],
+                'username' => $_SESSION['username']
             ]
         ]);
     } else {

@@ -1,4 +1,7 @@
 <?php
+// ✅ Start session untuk mengakses data user
+session_start();
+
 header("Content-Type: application/json; charset=UTF-8");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -8,70 +11,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once 'config.php';
 
-// Secret key untuk JWT (HARUS SAMA dengan di auth.php)
-define('JWT_SECRET', 'ganti_dengan_secret_key_yang_aman_12345');
-
-// Fungsi untuk verifikasi JWT Token
-function verifyJWT($token) {
-    if (!$token) return null;
-    
-    $tokenParts = explode('.', $token);
-    if (count($tokenParts) !== 3) return null;
-    
-    $header = base64_decode(str_replace(['-', '_'], ['+', '/'], $tokenParts[0]));
-    $payload = base64_decode(str_replace(['-', '_'], ['+', '/'], $tokenParts[1]));
-    $signatureProvided = $tokenParts[2];
-    
-    $base64UrlHeader = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($header));
-    $base64UrlPayload = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($payload));
-    
-    $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, JWT_SECRET, true);
-    $base64UrlSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
-    
-    if ($base64UrlSignature !== $signatureProvided) return null;
-    
-    $payloadData = json_decode($payload, true);
-    
-    // Cek apakah token expired
-    if (isset($payloadData['exp']) && $payloadData['exp'] < time()) {
-        return null;
-    }
-    
-    return $payloadData;
-}
-
-// Fungsi untuk mendapatkan token dari header
-function getBearerToken() {
-    $headers = getallheaders();
-    
-    if (isset($headers['Authorization'])) {
-        if (preg_match('/Bearer\s+(.*)$/i', $headers['Authorization'], $matches)) {
-            return $matches[1];
-        }
-    }
-    
-    return null;
-}
-
 // Fungsi untuk cek apakah user sudah login
 function checkAuth() {
-    $token = getBearerToken();
-    
-    if (!$token) {
+    if (!isset($_SESSION['user_id'])) {
         http_response_code(401);
         echo json_encode(['error' => 'Unauthorized. Please login first.']);
         exit();
     }
     
-    $payload = verifyJWT($token);
-    
-    if (!$payload) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Invalid or expired token.']);
-        exit();
-    }
-    
-    return $payload['user_id'];
+    return $_SESSION['user_id'];
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
