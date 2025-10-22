@@ -1,20 +1,8 @@
 <?php
 session_start();
 
-// --- FIX CORS (Railway + Netlify + Localhost) ---
-$allowed_origins = [
-    'https://duatduit.netlify.app',
-    'http://localhost:3000'
-];
-
-// Ambil origin dari request
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-
-// Kalau origin ada di whitelist, kirim header-nya
-if (in_array($origin, $allowed_origins)) {
-    header("Access-Control-Allow-Origin: $origin");
-}
-
+// --- FIX CORS (MODE TESTING / DEVELOPMENT) ---
+header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
@@ -23,18 +11,12 @@ header("Content-Type: application/json; charset=UTF-8");
 // --- Handle preflight (OPTIONS) ---
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
-    // Kirim header yang sama lagi agar browser terima responsnya
-    if (in_array($origin, $allowed_origins)) {
-        header("Access-Control-Allow-Origin: $origin");
-    }
-    header("Access-Control-Allow-Credentials: true");
-    header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-    header("Access-Control-Allow-Headers: Content-Type, Authorization");
     exit();
 }
 
 // --- Lanjut ke logic PHP ---
 require_once 'config.php';
+
 
 
 // 7️⃣ Routing berdasarkan action di query string (?action=)
