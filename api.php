@@ -1,15 +1,26 @@
 <?php
-// Start session PERTAMA sebelum header
 session_start();
 
-// CORS Headers
-header("Access-Control-Allow-Origin: https://duatduit.netlify.app");
+// ❌ HAPUS/COMMENT bagian CORS ini karena sudah ditangani .htaccess
+/*
+$allowed_origins = [
+    'https://duatduit.netlify.app',
+    'http://localhost:3000'
+];
+
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+
+if (in_array($origin, $allowed_origins)) {
+    header("Access-Control-Allow-Origin: $origin");
+}
+
+header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
-header("Access-Control-Allow-Credentials: true");
+*/
+
 header("Content-Type: application/json; charset=UTF-8");
 
-// Handle preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
