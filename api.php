@@ -1,12 +1,24 @@
 <?php
-// ==========================================
-// FILE: api.php - TRANSAKSI (GET, POST, DELETE)
-// ==========================================
+session_start();
 
-// ✅ CORS HEADERS
-header("Access-Control-Allow-Origin: *");
+// ❌ HAPUS/COMMENT bagian CORS ini karena sudah ditangani .htaccess
+/*
+$allowed_origins = [
+    'https://duatduit.netlify.app',
+    'http://localhost:3000'
+];
+
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+
+if (in_array($origin, $allowed_origins)) {
+    header("Access-Control-Allow-Origin: $origin");
+}
+
+header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
+*/
+
 header("Content-Type: application/json; charset=UTF-8");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -16,56 +28,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once 'config.php';
 
-// ✅ SECRET KEY harus sama dengan auth.php
-define('JWT_SECRET_KEY', 'ganti-dengan-key-rahasia-anda-123456');
-
-// ✅ Fungsi untuk verify JWT Token (copy dari auth.php)
-function verifyJWT($token) {
-    $tokenParts = explode('.', $token);
-    if (count($tokenParts) !== 3) {
-        return false;
-    }
-
-    list($base64UrlHeader, $base64UrlPayload, $base64UrlSignature) = $tokenParts;
-    
-    $signature = str_replace(['-', '_'], ['+', '/'], $base64UrlSignature);
-    $expectedSignature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, JWT_SECRET_KEY, true);
-    $expectedBase64UrlSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($expectedSignature));
-    
-    if ($base64UrlSignature !== $expectedBase64UrlSignature) {
-        return false;
-    }
-
-    $payload = json_decode(base64_decode(str_replace(['-', '_'], ['+', '/'], $base64UrlPayload)), true);
-    
-    if (isset($payload['exp']) && $payload['exp'] < time()) {
-        return false;
-    }
-
-    return $payload;
-}
-
-// ✅ Fungsi untuk check Authorization header
+// Fungsi untuk cek apakah user sudah login
 function checkAuth() {
-    $headers = getallheaders();
-    $authHeader = $headers['Authorization'] ?? '';
-    
-    if (empty($authHeader) || !preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+    if (!isset($_SESSION['user_id'])) {
         http_response_code(401);
         echo json_encode(['error' => 'Unauthorized. Please login first.']);
         exit();
     }
-    
-    $token = $matches[1];
-    $payload = verifyJWT($token);
-    
-    if (!$payload) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Invalid or expired token']);
-        exit();
-    }
-    
-    return $payload['user_id'];
+    return $_SESSION['user_id'];
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -89,6 +59,7 @@ switch($method) {
         break;
 }
 
+// GET - Ambil transaksi user yang login saja
 function getTransactions($user_id) {
     global $pdo;
     
@@ -107,6 +78,7 @@ function getTransactions($user_id) {
     }
 }
 
+// POST - Tambah transaksi untuk user yang login
 function addTransaction($user_id) {
     global $pdo;
     
@@ -148,6 +120,7 @@ function addTransaction($user_id) {
     }
 }
 
+// DELETE - Hapus transaksi milik user yang login
 function deleteTransaction($user_id) {
     global $pdo;
     
@@ -180,4 +153,5 @@ function deleteTransaction($user_id) {
         echo json_encode(['error' => $e->getMessage()]);
     }
 }
+
 ?>

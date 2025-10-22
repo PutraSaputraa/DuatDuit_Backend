@@ -1,12 +1,24 @@
 <?php
-// ==========================================
-// FILE: auth.php - LOGIN & REGISTER
-// ==========================================
+session_start();
 
-// ✅ CORS HEADERS (pastikan ini ada di .htaccess atau di sini)
-header("Access-Control-Allow-Origin: *"); // Atau ganti dengan domain Netlify Anda
+// ❌ HAPUS/COMMENT bagian CORS ini karena sudah ditangani .htaccess
+/*
+$allowed_origins = [
+    'https://duatduit.netlify.app',
+    'http://localhost:3000'
+];
+
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+
+if (in_array($origin, $allowed_origins)) {
+    header("Access-Control-Allow-Origin: $origin");
+}
+
+header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
+*/
+
 header("Content-Type: application/json; charset=UTF-8");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -16,66 +28,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once 'config.php';
 
-// ✅ SECRET KEY untuk JWT (GANTI dengan key rahasia Anda sendiri!)
-define('JWT_SECRET_KEY', 'ganti-dengan-key-rahasia-anda-123456');
-define('JWT_ALGORITHM', 'HS256');
-
-// ✅ Fungsi untuk generate JWT Token
-function generateJWT($user_id, $username) {
-    $header = json_encode(['typ' => 'JWT', 'alg' => JWT_ALGORITHM]);
-    $payload = json_encode([
-        'user_id' => $user_id,
-        'username' => $username,
-        'exp' => time() + (7 * 24 * 60 * 60) // Token valid 7 hari
-    ]);
-
-    $base64UrlHeader = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($header));
-    $base64UrlPayload = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($payload));
-    
-    $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, JWT_SECRET_KEY, true);
-    $base64UrlSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($signature));
-    
-    return $base64UrlHeader . "." . $base64UrlPayload . "." . $base64UrlSignature;
-}
-
-// ✅ Fungsi untuk verify JWT Token
-function verifyJWT($token) {
-    $tokenParts = explode('.', $token);
-    if (count($tokenParts) !== 3) {
-        return false;
-    }
-
-    list($base64UrlHeader, $base64UrlPayload, $base64UrlSignature) = $tokenParts;
-    
-    $signature = str_replace(['-', '_'], ['+', '/'], $base64UrlSignature);
-    $expectedSignature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, JWT_SECRET_KEY, true);
-    $expectedBase64UrlSignature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($expectedSignature));
-    
-    if ($base64UrlSignature !== $expectedBase64UrlSignature) {
-        return false;
-    }
-
-    $payload = json_decode(base64_decode(str_replace(['-', '_'], ['+', '/'], $base64UrlPayload)), true);
-    
-    // Cek apakah token expired
-    if (isset($payload['exp']) && $payload['exp'] < time()) {
-        return false;
-    }
-
-    return $payload;
-}
-
+// 7️⃣ Routing berdasarkan action di query string (?action=)
+$method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
 
 switch($action) {
     case 'register': register(); break;
     case 'login':    login();    break;
+    case 'logout':   logout();   break;
+    case 'check':    checkAuth(); break;
     default:
         http_response_code(400);
         echo json_encode(['error' => 'Invalid action']);
         break;
 }
 
+// =======================================================
+// ===============  FUNGSI - FUNGSI AUTH  ================
+// =======================================================
+
+// REGISTER — buat akun baru
 function register() {
     global $pdo;
     
@@ -131,6 +103,7 @@ function register() {
     }
 }
 
+// LOGIN — masuk akun
 function login() {
     global $pdo;
     
@@ -156,13 +129,12 @@ function login() {
             return;
         }
         
-        // ✅ Generate JWT Token
-        $token = generateJWT($user['id'], $user['username']);
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['username'] = $user['username'];
         
         echo json_encode([
             'success' => true,
             'message' => 'Login berhasil',
-            'token' => $token, // ✅ KIRIM TOKEN KE FRONTEND
             'user' => [
                 'id' => (int)$user['id'],
                 'username' => $user['username'],
@@ -174,6 +146,35 @@ function login() {
     } catch(PDOException $e) {
         http_response_code(500);
         echo json_encode(['error' => $e->getMessage()]);
+    }
+}
+
+// LOGOUT — keluar akun
+function logout() {
+    session_destroy();
+    
+    echo json_encode([
+        'success' => true,
+        'message' => 'Logout berhasil'
+    ]);
+}
+
+// CHECK AUTH — cek apakah user sudah login
+function checkAuth() {
+    if (isset($_SESSION['user_id'])) {
+        echo json_encode([
+            'success' => true,
+            'authenticated' => true,
+            'user' => [
+                'id' => $_SESSION['user_id'],
+                'username' => $_SESSION['username']
+            ]
+        ]);
+    } else {
+        echo json_encode([
+            'success' => true,
+            'authenticated' => false
+        ]);
     }
 }
 ?>
